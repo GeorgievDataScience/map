@@ -12,12 +12,10 @@
       padding: 0;
       height: 100%;
     }
-
     #map {
       height: 100%;
       width: 100%;
     }
-
     #confirmButton {
       position: absolute;
       bottom: 20px;
@@ -33,11 +31,9 @@
       z-index: 1000;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
-
     #confirmButton:hover {
       background-color: #0056b3;
     }
-
     #messageBubble {
       position: absolute;
       bottom: 70px;
@@ -52,13 +48,11 @@
       display: none;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-
     @media (max-width: 600px) {
       #confirmButton {
         font-size: 0.9em;
         padding: 10px 20px;
       }
-
       #messageBubble {
         font-size: 0.85em;
         padding: 8px 14px;
@@ -76,7 +70,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
   const map = L.map('map').setView([42.7, 23.3], 8);
-
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
   }).addTo(map);
@@ -92,10 +85,16 @@
       edit: {
         featureGroup: drawnItems,
         edit: false,
-        remove: true
+        remove: false // Ще направим наш бутон за директно изтриване
       },
       draw: {
-        polygon: enablePolygon,
+        polygon: enablePolygon ? {
+          allowIntersection: false,
+          showArea: false,
+          drawError: false,
+          guidelineDistance: 10,
+          repeatMode: false
+        } : false,
         marker: false,
         polyline: false,
         rectangle: false,
@@ -105,35 +104,28 @@
     });
   }
 
-  // Добавяне на първоначална контрола с активен бутон за рисуване
-  drawControl = createDrawControl(true);
-  map.addControl(drawControl);
+  function addDrawControl(enablePolygon = true) {
+    if (drawControl) {
+      map.removeControl(drawControl);
+    }
+    drawControl = createDrawControl(enablePolygon);
+    map.addControl(drawControl);
+  }
 
+  // Начално добавяне
+  addDrawControl(true);
+
+  // Чертане
   map.on(L.Draw.Event.CREATED, function (event) {
     drawnItems.clearLayers();
     const layer = event.layer;
     drawnItems.addLayer(layer);
     currentCoords = layer.getLatLngs();
 
-    // Премахване на старата контрола
-    map.removeControl(drawControl);
-
-    // Добавяне на нова без "Draw a polygon"
-    drawControl = createDrawControl(false);
-    map.addControl(drawControl);
+    addDrawControl(false); // махаме "Draw a polygon"
   });
 
-  map.on(L.Draw.Event.DELETED, function () {
-    currentCoords = null;
-
-    // Премахване на старата контрола
-    map.removeControl(drawControl);
-
-    // Възстановяване на пълен контрол с "Draw a polygon"
-    drawControl = createDrawControl(true);
-    map.addControl(drawControl);
-  });
-
+  // Потвърждение
   document.getElementById("confirmButton").addEventListener("click", function () {
     if (currentCoords) {
       if (window.parent) {
@@ -144,6 +136,7 @@
     }
   });
 
+  // Показване на съобщения
   function showMessage(text) {
     const message = document.getElementById("messageBubble");
     message.innerText = text;
@@ -152,6 +145,31 @@
       message.style.display = "none";
     }, 4000);
   }
+
+  // Бутон за директно изтриване
+  const deleteButton = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd: function () {
+      const button = L.DomUtil.create('button', '');
+      button.innerHTML = '🗑️ Изтрий';
+      button.style.background = '#dc3545';
+      button.style.color = 'white';
+      button.style.border = 'none';
+      button.style.padding = '6px 10px';
+      button.style.margin = '8px';
+      button.style.borderRadius = '6px';
+      button.style.cursor = 'pointer';
+      button.style.fontSize = '14px';
+      button.title = 'Изтрий парцела';
+      button.onclick = () => {
+        drawnItems.clearLayers();
+        currentCoords = null;
+        addDrawControl(true); // върни "Draw a polygon"
+      };
+      return button;
+    }
+  });
+  map.addControl(new deleteButton());
 </script>
 
 </body>
