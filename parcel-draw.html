@@ -64,6 +64,11 @@
         padding: 8px 14px;
       }
     }
+
+    /* Скриване на "No layers to edit" съобщението */
+    .leaflet-draw-actions li.leaflet-draw-edit-edit.leaflet-disabled {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -104,6 +109,11 @@
     const layer = event.layer;
     drawnItems.addLayer(layer);
     currentCoords = layer.getLatLngs();
+  });
+
+  // Нулиране на координатите при изтриване на фигура
+  map.on(L.Draw.Event.DELETED, function () {
+    currentCoords = null;
   });
 
   function showMessage(text) {
