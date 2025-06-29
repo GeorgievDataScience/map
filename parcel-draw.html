@@ -38,10 +38,30 @@
       background-color: #0056b3;
     }
 
+    #messageBubble {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #f44336;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      z-index: 1001;
+      display: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
     @media (max-width: 600px) {
       #confirmButton {
         font-size: 0.9em;
         padding: 10px 20px;
+      }
+
+      #messageBubble {
+        font-size: 0.85em;
+        padding: 8px 14px;
       }
     }
   </style>
@@ -49,6 +69,7 @@
 <body>
 
 <div id="map"></div>
+<div id="messageBubble">⚠️ Моля, първо очертайте парцела.</div>
 <button id="confirmButton">Потвърди очертаването</button>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -85,13 +106,23 @@
     currentCoords = layer.getLatLngs();
   });
 
+  function showMessage(text) {
+    const message = document.getElementById("messageBubble");
+    message.innerText = text;
+    message.style.display = "block";
+
+    setTimeout(() => {
+      message.style.display = "none";
+    }, 4000);
+  }
+
   document.getElementById("confirmButton").addEventListener("click", function () {
     if (currentCoords) {
       if (window.parent) {
         window.parent.postMessage(JSON.stringify(currentCoords), "*");
       }
     } else {
-      alert("Моля, първо очертайте парцела.");
+      showMessage("⚠️ Моля, първо очертайте парцела.");
     }
   });
 </script>
