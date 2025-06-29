@@ -84,49 +84,55 @@
   const drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
 
-  const drawControl = new L.Control.Draw({
-    edit: {
-      featureGroup: drawnItems,
-      edit: false,
-      remove: true
-    },
-    draw: {
-      polygon: true,
-      marker: false,
-      polyline: false,
-      rectangle: false,
-      circle: false,
-      circlemarker: false
-    }
-  });
+  let currentCoords = null;
+  let drawControl = null;
 
+  function createDrawControl(enablePolygon = true) {
+    return new L.Control.Draw({
+      edit: {
+        featureGroup: drawnItems,
+        edit: false,
+        remove: true
+      },
+      draw: {
+        polygon: enablePolygon,
+        marker: false,
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        circlemarker: false
+      }
+    });
+  }
+
+  // Добавяне на първоначална контрола с активен бутон за рисуване
+  drawControl = createDrawControl(true);
   map.addControl(drawControl);
 
-  let currentCoords = null;
-
-  // След като се начертае – махни бутона
   map.on(L.Draw.Event.CREATED, function (event) {
     drawnItems.clearLayers();
     const layer = event.layer;
     drawnItems.addLayer(layer);
     currentCoords = layer.getLatLngs();
-    removeDrawButton();
+
+    // Премахване на старата контрола
+    map.removeControl(drawControl);
+
+    // Добавяне на нова без "Draw a polygon"
+    drawControl = createDrawControl(false);
+    map.addControl(drawControl);
   });
 
-  // При изтриване – добави бутона обратно
   map.on(L.Draw.Event.DELETED, function () {
     currentCoords = null;
-    addDrawButton();
-  });
 
-  function showMessage(text) {
-    const message = document.getElementById("messageBubble");
-    message.innerText = text;
-    message.style.display = "block";
-    setTimeout(() => {
-      message.style.display = "none";
-    }, 4000);
-  }
+    // Премахване на старата контрола
+    map.removeControl(drawControl);
+
+    // Възстановяване на пълен контрол с "Draw a polygon"
+    drawControl = createDrawControl(true);
+    map.addControl(drawControl);
+  });
 
   document.getElementById("confirmButton").addEventListener("click", function () {
     if (currentCoords) {
@@ -138,32 +144,13 @@
     }
   });
 
-  function removeDrawButton() {
-    const button = document.querySelector('.leaflet-draw-draw-polygon');
-    if (button) {
-      button.remove();
-    }
-  }
-
-  function addDrawButton() {
-    // Рестартираме контролата
-    map.removeControl(drawControl);
-    const newDrawControl = new L.Control.Draw({
-      edit: {
-        featureGroup: drawnItems,
-        edit: false,
-        remove: true
-      },
-      draw: {
-        polygon: true,
-        marker: false,
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        circlemarker: false
-      }
-    });
-    map.addControl(newDrawControl);
+  function showMessage(text) {
+    const message = document.getElementById("messageBubble");
+    message.innerText = text;
+    message.style.display = "block";
+    setTimeout(() => {
+      message.style.display = "none";
+    }, 4000);
   }
 </script>
 
