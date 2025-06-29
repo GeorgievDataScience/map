@@ -12,46 +12,89 @@
       padding: 0;
       height: 100%;
     }
+
     #map {
       height: 100%;
       width: 100%;
     }
+
+    #confirmButton {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      font-size: 1em;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    #confirmButton:hover {
+      background-color: #0056b3;
+    }
+
+    @media (max-width: 600px) {
+      #confirmButton {
+        font-size: 0.9em;
+        padding: 10px 20px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<div id="map"></div>
+<button id="confirmButton">Потвърди очертаването</button>
 
-  <script>
-    const map = L.map('map').setView([42.7, 23.3], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+  const map = L.map('map').setView([42.7, 23.3], 8);
 
-    const drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
 
-    const drawControl = new L.Control.Draw({
-      edit: { featureGroup: drawnItems },
-      draw: {
-        polygon: true,
-        marker: false,
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        circlemarker: false
+  const drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  const drawControl = new L.Control.Draw({
+    edit: { featureGroup: drawnItems },
+    draw: {
+      polygon: true,
+      marker: false,
+      polyline: false,
+      rectangle: false,
+      circle: false,
+      circlemarker: false
+    }
+  });
+  map.addControl(drawControl);
+
+  let currentCoords = null;
+
+  map.on(L.Draw.Event.CREATED, function (event) {
+    drawnItems.clearLayers();
+    const layer = event.layer;
+    drawnItems.addLayer(layer);
+    currentCoords = layer.getLatLngs();
+  });
+
+  document.getElementById("confirmButton").addEventListener("click", function () {
+    if (currentCoords) {
+      if (window.parent) {
+        window.parent.postMessage(JSON.stringify(currentCoords), "*");
       }
-    });
-    map.addControl(drawControl);
+    } else {
+      alert("Моля, първо очертайте парцела.");
+    }
+  });
+</script>
 
-    map.on(L.Draw.Event.CREATED, function (event) {
-      drawnItems.clearLayers();
-      const layer = event.layer;
-      drawnItems.addLayer(layer);
-      const coords = layer.getLatLngs();
-      window.parent.postMessage(JSON.stringify(coords), "*");
-      console.log("Координати:", coords);
-    });
-  </script>
 </body>
 </html>
