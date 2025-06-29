@@ -84,6 +84,7 @@
   const drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
 
+  // Основен контрол за рисуване
   const drawControl = new L.Control.Draw({
     edit: {
       featureGroup: drawnItems,
@@ -103,23 +104,26 @@
   map.addControl(drawControl);
 
   let currentCoords = null;
-  let drawControlEnabled = true;
+  let polygonDrawer = null;
 
-  // След чертане
+  // След първо чертане — деактивиране
   map.on(L.Draw.Event.CREATED, function (event) {
     drawnItems.clearLayers();
     const layer = event.layer;
     drawnItems.addLayer(layer);
     currentCoords = layer.getLatLngs();
-    disableDrawButton(); // Деактивирай чертането
+
+    map.off('draw:drawstart'); // блокира започване
+    disablePolygonButton(); // визуално сиво
   });
 
-  // При изтриване
+  // При изтриване — активиране
   map.on(L.Draw.Event.DELETED, function () {
     currentCoords = null;
-    enableDrawButton(); // Активирай чертането отново
+    enablePolygonButton(); // възстановява поведение
   });
 
+  // Показване на съобщение
   function showMessage(text) {
     const message = document.getElementById("messageBubble");
     message.innerText = text;
@@ -130,6 +134,7 @@
     }, 4000);
   }
 
+  // Потвърждение
   document.getElementById("confirmButton").addEventListener("click", function () {
     if (currentCoords) {
       if (window.parent) {
@@ -140,28 +145,38 @@
     }
   });
 
-  // Деактивиране на бутона "Draw a polygon"
-  function disableDrawButton() {
+  // Деактивация на функционалността за чертане
+  function disablePolygonButton() {
     const toolbar = document.querySelector('.leaflet-draw-toolbar');
     if (toolbar) {
-      const drawButton = toolbar.querySelector('.leaflet-draw-draw-polygon');
-      if (drawButton) {
-        drawButton.classList.add('leaflet-disabled');
-        drawButton.setAttribute('title', 'Вече е начертан парцел');
+      const button = toolbar.querySelector('.leaflet-draw-draw-polygon');
+      if (button) {
+        button.classList.add('leaflet-disabled');
+        button.setAttribute('disabled', 'true');
+        button.setAttribute('title', 'Вече е начертан парцел');
       }
     }
+
+    // Спиране на ново чертане
+    map.on('draw:drawstart', function (e) {
+      map.fire('draw:drawstop');
+    });
   }
 
-  // Активиране обратно на бутона
-  function enableDrawButton() {
+  // Реактивация
+  function enablePolygonButton() {
     const toolbar = document.querySelector('.leaflet-draw-toolbar');
     if (toolbar) {
-      const drawButton = toolbar.querySelector('.leaflet-draw-draw-polygon');
-      if (drawButton) {
-        drawButton.classList.remove('leaflet-disabled');
-        drawButton.setAttribute('title', 'Начертай парцел');
+      const button = toolbar.querySelector('.leaflet-draw-draw-polygon');
+      if (button) {
+        button.classList.remove('leaflet-disabled');
+        button.removeAttribute('disabled');
+        button.setAttribute('title', 'Начертай парцел');
       }
     }
+
+    // Възстановяване на нормално поведение
+    map.off('draw:drawstart');
   }
 </script>
 
