@@ -105,7 +105,6 @@
     });
   }
 
-  // Добавяне на първоначална контрола с активен бутон за рисуване
   drawControl = createDrawControl(true);
   map.addControl(drawControl);
 
@@ -115,29 +114,28 @@
     drawnItems.addLayer(layer);
     currentCoords = layer.getLatLngs();
 
-    // Премахване на старата контрола
     map.removeControl(drawControl);
-
-    // Добавяне на нова без "Draw a polygon"
     drawControl = createDrawControl(false);
     map.addControl(drawControl);
   });
 
   map.on(L.Draw.Event.DELETED, function () {
     currentCoords = null;
-
-    // Премахване на старата контрола
     map.removeControl(drawControl);
-
-    // Възстановяване на пълен контрол с "Draw a polygon"
     drawControl = createDrawControl(true);
     map.addControl(drawControl);
   });
 
   document.getElementById("confirmButton").addEventListener("click", function () {
     if (currentCoords) {
+      const coords = currentCoords[0].map(point => ({
+        lat: point.lat,
+        lng: point.lng
+      }));
+
+      // Изпращаме координатите към родителския прозорец (Wix)
       if (window.parent) {
-        window.parent.postMessage(JSON.stringify(currentCoords), "*");
+        window.parent.postMessage(JSON.stringify([coords]), "*");
       }
     } else {
       showMessage("⚠️ Моля, първо очертайте парцела.");
