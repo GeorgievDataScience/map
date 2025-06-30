@@ -18,11 +18,9 @@
       width: 100%;
     }
 
-    #confirmButton {
+    #confirmButton, #deleteButton {
       position: absolute;
       bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
       padding: 12px 24px;
       font-size: 1em;
       background-color: #007bff;
@@ -34,8 +32,20 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
 
-    #confirmButton:hover {
+    #confirmButton:hover,
+    #deleteButton:hover {
       background-color: #0056b3;
+    }
+
+    #confirmButton {
+      left: 50%;
+      transform: translateX(-60%);
+    }
+
+    #deleteButton {
+      left: 50%;
+      transform: translateX(60%);
+      background-color: #dc3545;
     }
 
     #messageBubble {
@@ -54,7 +64,7 @@
     }
 
     @media (max-width: 600px) {
-      #confirmButton {
+      #confirmButton, #deleteButton {
         font-size: 0.9em;
         padding: 10px 20px;
       }
@@ -71,6 +81,7 @@
 <div id="map"></div>
 <div id="messageBubble">⚠️ Моля, първо очертайте парцела.</div>
 <button id="confirmButton">Потвърди очертаването</button>
+<button id="deleteButton">Изтрий парцела</button>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
@@ -85,14 +96,15 @@
   map.addLayer(drawnItems);
 
   let currentCoords = null;
-  let drawControl = null;
+  let drawControl = createDrawControl(true);
+  map.addControl(drawControl);
 
-  function createDrawControl(enablePolygon = true) {
+  function createDrawControl(enablePolygon) {
     return new L.Control.Draw({
       edit: {
         featureGroup: drawnItems,
         edit: false,
-        remove: true
+        remove: false // премахваме delete от панела
       },
       draw: {
         polygon: enablePolygon,
@@ -105,32 +117,14 @@
     });
   }
 
-  // Добавяне на първоначална контрола с активен бутон за рисуване
-  drawControl = createDrawControl(true);
-  map.addControl(drawControl);
-
   map.on(L.Draw.Event.CREATED, function (event) {
     drawnItems.clearLayers();
     const layer = event.layer;
     drawnItems.addLayer(layer);
     currentCoords = layer.getLatLngs();
 
-    // Премахване на старата контрола
     map.removeControl(drawControl);
-
-    // Добавяне на нова без "Draw a polygon"
     drawControl = createDrawControl(false);
-    map.addControl(drawControl);
-  });
-
-  map.on(L.Draw.Event.DELETED, function () {
-    currentCoords = null;
-
-    // Премахване на старата контрола
-    map.removeControl(drawControl);
-
-    // Възстановяване на пълен контрол с "Draw a polygon"
-    drawControl = createDrawControl(true);
     map.addControl(drawControl);
   });
 
@@ -142,6 +136,15 @@
     } else {
       showMessage("⚠️ Моля, първо очертайте парцела.");
     }
+  });
+
+  document.getElementById("deleteButton").addEventListener("click", function () {
+    drawnItems.clearLayers();
+    currentCoords = null;
+
+    map.removeControl(drawControl);
+    drawControl = createDrawControl(true);
+    map.addControl(drawControl);
   });
 
   function showMessage(text) {
